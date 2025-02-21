@@ -14,7 +14,7 @@ if sys.platform != "win32":
 app = Quart(__name__)
 
 # 글로벌 HTTP 클라이언트 (연결 재사용)
-client = httpx.AsyncClient(http2=True, timeout=30.0)
+client = httpx.AsyncClient(http2=True, timeout=60.0)
 
 async def proxy_request(base_url, path):
     url = f"{base_url}/{path}" if path else base_url
@@ -33,14 +33,14 @@ async def proxy_request(base_url, path):
         return jsonify({"error": "Failed to connect to the backend", "details": str(e)}), 502
 
 # 서비스 A (포트 8188)로 요청을 프록시
-@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 async def proxy_a(path):
     return await proxy_request('http://127.0.0.1:8188', path)
 
 # 서비스 B (포트 8189)로 요청을 프록시
-@app.route('/infinite_image_browsing', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@app.route('/infinite_image_browsing/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/infinite_image_browsing', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+@app.route('/infinite_image_browsing/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 async def proxy_b(path):
     return await proxy_request('http://127.0.0.1:8189/infinite_image_browsing', path)
 
