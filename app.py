@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import sys
 from quart import Quart, request, Response, jsonify
@@ -53,9 +54,13 @@ async def startup():
 async def shutdown():
     await client.aclose()
 
+# 로그 레벨 설정 (ERROR 이상만 출력)
+logging.getLogger("hypercorn.access").setLevel(logging.ERROR)
+logging.getLogger("hypercorn.error").setLevel(logging.ERROR)
+logging.getLogger("quart.app").setLevel(logging.ERROR)
+
 # Hypercorn 실행
 if __name__ == '__main__':
     config = hypercorn.config.Config()
     config.bind = ["0.0.0.0:8800"]
-
     asyncio.run(hypercorn.asyncio.serve(app, config))
