@@ -14,12 +14,12 @@ if sys.platform != "win32":
 app = Quart(__name__)
 
 # 글로벌 HTTP 클라이언트 (연결 재사용)
-client = httpx.AsyncClient(http2=True, timeout=10.0)
+client = httpx.AsyncClient(http2=True, timeout=30.0)
 
 async def proxy_request(base_url, path):
     url = f"{base_url}/{path}" if path else base_url
     method = request.method
-    headers = {key: value for key, value in request.headers.items() if key.lower() != 'host'}
+    headers = {key: value for key, value in request.headers.items() if key.lower() not in ["host", "content-length"]}
     data = await request.data
 
     try:
@@ -48,7 +48,7 @@ async def proxy_b(path):
 @app.before_serving
 async def startup():
     global client
-    client = httpx.AsyncClient(http2=True, timeout=10.0)
+    client = httpx.AsyncClient(http2=True, timeout=60.0)
 
 @app.after_serving
 async def shutdown():
@@ -63,4 +63,5 @@ logging.getLogger("quart.app").setLevel(logging.ERROR)
 if __name__ == '__main__':
     config = hypercorn.config.Config()
     config.bind = ["0.0.0.0:8800"]
+    config.keep_alive_timeout = 120  # 타임아웃 증가
     asyncio.run(hypercorn.asyncio.serve(app, config))
