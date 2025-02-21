@@ -5,8 +5,6 @@ from quart import Quart, request, Response, jsonify
 import httpx
 import hypercorn.asyncio
 import hypercorn.config
-from quart_sock import Sock
-import websockets
 
 # Linux/macOS에서만 uvloop 적용
 if sys.platform != "win32":
@@ -14,7 +12,6 @@ if sys.platform != "win32":
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 app = Quart(__name__)
-sock = Sock(app)  # WebSocket 지원 추가
 
 # 글로벌 HTTP 클라이언트 (연결 재사용)
 client = httpx.AsyncClient(http2=True, timeout=60.0)
@@ -46,20 +43,6 @@ async def proxy_a(path):
 @app.route('/infinite_image_browsing/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 async def proxy_b(path):
     return await proxy_request('http://127.0.0.1:8189/infinite_image_browsing', path)
-
-# WebSocket 프록시 핸들러 추가
-@sock.route('/ws/<path:path>')
-async def websocket_proxy(ws, path):
-    backend_ws_url = f"ws://127.0.0.1:8188/{path}"
-    try:
-        async with websockets.connect(backend_ws_url) as backend_ws:
-            while True:
-                msg = await ws.receive()
-                await backend_ws.send(msg)
-                response = await backend_ws.recv()
-                await ws.send(response)
-    except Exception as e:
-        await ws.send(f"WebSocket Proxy Error: {str(e)}")
 
 # HTTP 클라이언트 시작 및 종료 처리
 @app.before_serving
